@@ -2,6 +2,7 @@ import os
 import re
 import logging
 from flask import Flask, request, render_template_string
+
 LOG_FILE = "security_alerts.log"
 logging.basicConfig(
     filename=LOG_FILE,
@@ -12,26 +13,23 @@ logging.basicConfig(
 
 def detect_attack(user_input, ip_address):
     """Basit bir İmza Tabanlı Saldırı Tespit Sistemi (IDS)"""
-    sqli_patterns = [r"UNION\s+SELECT", r"'\s*OR\s*'\d+'\s*=\s*'\d+", r"admin'\s*--"]
+    sqli_patterns = [r"UNION\s+SELECT", r"'\sOR\s'\d+'\s=\s'\d+", r"admin'\s*--"]
     xss_patterns = [r"<script>", r"javascript:", r"onerror="]
+
 
     for pattern in sqli_patterns:
         if re.search(pattern, user_input, re.IGNORECASE):
             logging.info(f"SQL Injection Girişimi Engellendi! IP: {ip_address} | Girdi: {user_input}")
             return "SQL Injection Saldırısı Tespit Edildi!"
 
-  
+
     for pattern in xss_patterns:
-        if re.search(pattern, xss_patterns, re.IGNORECASE): 
-            pass 
-        if any(re.search(p, user_input, re.IGNORECASE) for p in xss_patterns):
+        if re.search(pattern, user_input, re.IGNORECASE):
             logging.info(f"XSS Girişimi Engellendi! IP: {ip_address} | Girdi: {user_input}")
             return "XSS Saldırısı Tespit Edildi!"
+return None
 
-    return None
-
-
-app = Flask(__name__)
+app = Flask(name)
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -53,7 +51,7 @@ HTML_TEMPLATE = """
     <div class="container">
         <h2>Mini Siber Güvenlik Labı (IDS & WAF Simülasyonu)</h2>
         <p>Aşağıdaki kutuya arama terimi girerek sistemi test edin (Örn: <code>' OR '1'='1</code> veya <code>&lt;script&gt;</code>):</p>
-        
+
         <form method="POST">
             <input type="text" name="search_query" placeholder="Bir şeyler arayın..." required>
             <input type="submit" value="Sorgula">
@@ -70,17 +68,18 @@ HTML_TEMPLATE = """
 </html>
 """
 
-@app.route("/", channels=["GET", "POST"], methods=["GET", "POST"])
+
+@app.route("/", methods=["GET", "POST"])
 def home():
     alert = None
     result = None
-    
+
     if request.method == "POST":
         user_input = request.form.get("search_query", "")
         ip_address = request.remote_addr
-        
+
         attack_detected = detect_attack(user_input, ip_address)
-        
+
         if attack_detected:
             alert = f"⚠️ {attack_detected} Log dosyasına (security_alerts.log) kaydedildi."
         else:
@@ -88,7 +87,7 @@ def home():
 
     return render_template_string(HTML_TEMPLATE, alert=alert, result=result)
 
-if __name__ == "__main__":
-    print("[*] Siber güvenlik laboratuvarı başlatılıyor...")
-    print(f"[*] Saldırı logları '{LOG_FILE}' dosyasına yazılacak.")
+if name == "main":
+    print("[] Siber güvenlik laboratuvarı başlatılıyor...")
+    print(f"[] Saldırı logları '{LOG_FILE}' dosyasına yazılacak.")
     app.run(debug=True, port=5000)
